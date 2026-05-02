@@ -1,6 +1,6 @@
 param(
   [string]$Prompt = "reply exactly local-deepseek-ok",
-  [string]$Workspace = "D:\Claude"
+  [string]$Workspace = (Get-Location).Path
 )
 
 $ErrorActionPreference = "Stop"

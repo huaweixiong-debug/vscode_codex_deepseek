@@ -1,4 +1,5 @@
-$action = New-ScheduledTaskAction -Execute 'powershell' -Argument '-NoProfile -ExecutionPolicy Bypass -File "d:\Codex Deepseek\Start-CodexDeepSeek.ps1" -ProxyOnly'
+$script = Join-Path $PSScriptRoot "Start-CodexDeepSeek.ps1"
+$action = New-ScheduledTaskAction -Execute 'powershell' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$script`" -ProxyOnly"
 $trigger = New-ScheduledTaskTrigger -AtLogon
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable

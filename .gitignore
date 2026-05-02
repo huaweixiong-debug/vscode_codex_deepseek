@@ -8,6 +8,14 @@ node_modules/
 *.log
 log/
 
+# Local secrets and generated binaries
+.env
+*.env
+deepseek.env
+CodexDeepSeekAppServer.exe
+*.pdb
+*.user
+
 # IDE
 .vscode/
 

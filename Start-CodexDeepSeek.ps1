@@ -1,5 +1,5 @@
 param(
-  [string]$Workspace = "D:\Claude",
+  [string]$Workspace = (Get-Location).Path,
   [switch]$App,
   [switch]$ProxyOnly
 )
@@ -72,10 +72,11 @@ if ($ProxyOnly) {
 
 if ($App) {
   & codex app `
-    -c 'model_provider="lmstudio"' `
+    -c 'model_provider="deepseek-codex"' `
     -c 'model="deepseek-v4-pro"' `
-    -c 'model_providers.lmstudio.base_url="http://127.0.0.1:17777/v1"' `
-    -c 'model_providers.lmstudio.wire_api="responses"' `
+    -c 'model_providers.deepseek-codex.name="DeepSeek Codex"' `
+    -c 'model_providers.deepseek-codex.base_url="http://127.0.0.1:17777/v1"' `
+    -c 'model_providers.deepseek-codex.wire_api="responses"' `
     $Workspace
 } else {
   & codex `
