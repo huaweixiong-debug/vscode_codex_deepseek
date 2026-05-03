@@ -93,6 +93,32 @@ responses->chat model=deepseek-v4-pro requested_model=deepseek-v4-pro
 
 VSCode 插件启动的是 `codex app-server`，不能直接复用普通 CLI 参数。这里用一个小的 `.exe` wrapper 接管插件的 `chatgpt.cliExecutable`。
 
+### 一键部署
+
+在仓库根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-VSCodeCodexDeepSeek.ps1
+```
+
+脚本会自动完成：
+
+- 复制 `deepseek-codex-proxy.js` 和启动脚本到 `%LOCALAPPDATA%\CodexDeepSeek`
+- 编译 `CodexDeepSeekAppServer.exe`
+- 写入 `%USERPROFILE%\.codex\deepseek.env`
+- 修改 VSCode `settings.json`
+- 启动本地 DeepSeek proxy
+
+如果想非交互传入 key：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-VSCodeCodexDeepSeek.ps1 -DeepSeekApiKey "sk-your-key-here"
+```
+
+部署后执行 `Developer: Reload Window`，或重启 VSCode。
+
+### 手动部署
+
 1. 编译 wrapper：
 
 ```powershell
