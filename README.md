@@ -160,6 +160,72 @@ Get-Content "$env:USERPROFILE\.codex\log\deepseek-codex-proxy.log" -Tail 20
 - compose 服务名和容器名都是 `codex`
 - DeepSeek key 已在某个来源可用，例如 `.env` 或另一个容器环境变量
 
+### SSH 一键部署
+
+在 Windows 本机仓库根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-NASDockerCodexDeepSeek.ps1
+```
+
+脚本会通过对话询问：
+
+- NAS SSH host/IP
+- SSH 用户名和端口
+- `/volume1/docker/codex` 这类 compose 目录
+- compose service name，默认 `codex`
+- Docker container name，默认 `codex`
+- DeepSeek key 来源
+- SSH 客户端模式：`openssh` 或 `putty`
+
+DeepSeek key 来源可以选：
+
+- 现场输入 `DEEPSEEK_API_KEY`
+- 复用 NAS 上 `/volume1/docker/codex/.env`
+- 从另一个容器环境变量复制，例如 `hermes`
+
+非交互示例：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-NASDockerCodexDeepSeek.ps1 `
+  -NasHost "nas-host-or-ip" `
+  -NasUser "your-ssh-user" `
+  -RemoteCodexDir "/volume1/docker/codex" `
+  -ServiceName "codex" `
+  -ContainerName "codex" `
+  -KeySourceContainer "hermes"
+```
+
+如果直接传 key：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-NASDockerCodexDeepSeek.ps1 `
+  -NasHost "nas-host-or-ip" `
+  -NasUser "your-ssh-user" `
+  -DeepSeekApiKey "sk-your-key-here"
+```
+
+脚本会自动完成：
+
+- 上传 `deepseek-codex-proxy.js`
+- 修改 `/volume1/docker/codex/.env`
+- 修改 `/volume1/docker/codex/docker-compose.yml`
+- 写入 `codex-home/config.toml`
+- 写入 `codex-home/start-deepseek-proxy.sh`
+- 写入 `codex-home/bin/codex-deepseek`
+- `docker compose up -d codex`
+- 运行一次 smoke test 验证 `model: deepseek-v4-pro`
+
+脚本会先备份：
+
+```text
+docker-compose.yml.before-deepseek.*
+.env.before-deepseek.*
+codex-home/config.toml.before-deepseek.*
+```
+
+### 手动部署
+
 推荐步骤：
 
 1. 把这些文件复制到 NAS 用户家目录：
