@@ -256,6 +256,7 @@ async function handleResponses(req, res, body) {
 const server = http.createServer(async (req, res) => {
   try {
     const path = new URL(req.url, 'http://127.0.0.1').pathname;
+    log(`${req.method} ${path}`);
     if (req.method === 'GET' && (path === '/v1/models' || path === '/models')) {
       const now = Math.floor(Date.now() / 1000);
       const buildModel = (slug, display, desc, levels) => ({ slug, id: slug, name: slug, display_name: display, created: now, owned_by: 'deepseek', object: 'model', description: desc, default_reasoning_level: 'medium', supported_reasoning_levels: levels, supports_streaming: true, supports_tool_calls: true, supports_images: false, supports_audio: false, shell_type: 'shell_command', visibility: 'list', supported_in_api: true, priority: 0, additional_speed_tiers: [], supports_reasoning_summaries: true, default_reasoning_summary: 'none', support_verbosity: true, default_verbosity: 'low', supports_parallel_tool_calls: true, supports_image_detail_original: false, context_window: 200000, max_context_window: 200000, effective_context_window_percent: 95, experimental_supported_tools: [], input_modalities: ['text'], supports_search_tool: false, base_instructions: '', truncation_policy: { mode: 'tokens', limit: 10000 }, model_messages: { instructions_template: 'You are Codex, a coding agent. The actual upstream model is DeepSeek V4 Pro through a local compatibility proxy.', instructions_variables: {} } });
