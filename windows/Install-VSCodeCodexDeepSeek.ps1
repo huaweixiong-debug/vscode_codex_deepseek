@@ -53,7 +53,7 @@ function Protect-SecretFile {
     & icacls $Path /inheritance:r | Out-Null
     & icacls $Path /grant:r "$env:USERNAME:F" | Out-Null
   } catch {
-    Write-Warning "Unable to tighten ACL for $Path: $($_.Exception.Message)"
+    Write-Warning "Unable to tighten ACL for ${Path}: $($_.Exception.Message)"
   }
 }
 
