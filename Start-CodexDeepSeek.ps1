@@ -10,6 +10,7 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProxyScript = Join-Path $Root "deepseek-codex-proxy.js"
 $LogDir = Join-Path $env:USERPROFILE ".codex\log"
 $SecretFile = Join-Path $env:USERPROFILE ".codex\deepseek.env"
+$LocalSecretFile = Join-Path $Root "deepseek.env"
 $Port = 17777
 
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -18,14 +19,16 @@ function Get-DeepSeekKey {
   if ($env:DEEPSEEK_API_KEY) {
     return $env:DEEPSEEK_API_KEY
   }
-  if (Test-Path -LiteralPath $SecretFile) {
-    foreach ($line in Get-Content -LiteralPath $SecretFile) {
-      if ($line -match '^\s*DEEPSEEK_API_KEY\s*=\s*(.+?)\s*$') {
-        return $Matches[1].Trim().Trim('"').Trim("'")
+  foreach ($candidate in @($SecretFile, $LocalSecretFile)) {
+    if (Test-Path -LiteralPath $candidate) {
+      foreach ($line in Get-Content -LiteralPath $candidate -ErrorAction SilentlyContinue) {
+        if ($line -match '^\s*DEEPSEEK_API_KEY\s*=\s*(.+?)\s*$') {
+          return $Matches[1].Trim().Trim('"').Trim("'")
+        }
       }
     }
   }
-  throw "DEEPSEEK_API_KEY not found. Set it in the environment or in $SecretFile."
+  throw "DEEPSEEK_API_KEY not found. Set it in the environment, $SecretFile, or $LocalSecretFile."
 }
 
 function Test-PortOpen {

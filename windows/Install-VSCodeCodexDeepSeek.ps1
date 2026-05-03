@@ -78,6 +78,7 @@ Copy-Item -LiteralPath $BuilderSource -Destination (Join-Path $InstallDir "Build
 
 $CodexHome = Join-Path $env:USERPROFILE ".codex"
 $SecretFile = Join-Path $CodexHome "deepseek.env"
+$InstallSecretFile = Join-Path $InstallDir "deepseek.env"
 New-Item -ItemType Directory -Force -Path $CodexHome | Out-Null
 
 if (-not $DeepSeekApiKey) {
@@ -101,9 +102,17 @@ if (-not $DeepSeekApiKey) {
   throw "DEEPSEEK_API_KEY is required."
 }
 
-Write-Step "Writing DeepSeek key to $SecretFile"
-Set-Content -LiteralPath $SecretFile -Value "DEEPSEEK_API_KEY=$DeepSeekApiKey" -Encoding ASCII
-Protect-SecretFile -Path $SecretFile
+$SecretValue = "DEEPSEEK_API_KEY=$DeepSeekApiKey"
+try {
+  Write-Step "Writing DeepSeek key to $SecretFile"
+  Set-Content -LiteralPath $SecretFile -Value $SecretValue -Encoding ASCII
+  Protect-SecretFile -Path $SecretFile
+} catch {
+  Write-Warning "Unable to write ${SecretFile}: $($_.Exception.Message)"
+  Write-Step "Writing DeepSeek key to fallback file $InstallSecretFile"
+  Set-Content -LiteralPath $InstallSecretFile -Value $SecretValue -Encoding ASCII
+  Protect-SecretFile -Path $InstallSecretFile
+}
 
 $WrapperExe = Join-Path $InstallDir "CodexDeepSeekAppServer.exe"
 Write-Step "Building VSCode app-server wrapper"
