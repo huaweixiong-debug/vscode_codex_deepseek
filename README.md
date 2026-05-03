@@ -117,6 +117,80 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-VSCodeCode
 
 部署后执行 `Developer: Reload Window`，或重启 VSCode。
 
+### 实测配置与加载确认
+
+如果仓库根目录已有 `deepseek.env`，可以临时把里面的 key 读入当前 PowerShell 会话，再执行一键部署，避免在命令行明文传入 key：
+
+```powershell
+$keyLine = Get-Content -LiteralPath .\deepseek.env |
+  Where-Object { $_ -match '^\s*DEEPSEEK_API_KEY\s*=' } |
+  Select-Object -First 1
+$env:DEEPSEEK_API_KEY = ($keyLine -replace '^\s*DEEPSEEK_API_KEY\s*=\s*', '').Trim().Trim('"').Trim("'")
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-VSCodeCodexDeepSeek.ps1
+```
+
+部署脚本会把 VSCode 用户设置改成：
+
+```json
+{
+  "chatgpt.runCodexInWindowsSubsystemForLinux": false,
+  "chatgpt.cliExecutable": "C:\\Users\\YOUR_USER\\AppData\\Local\\CodexDeepSeek\\CodexDeepSeekAppServer.exe"
+}
+```
+
+确认 VSCode 设置已经生效：
+
+```powershell
+$settings = Get-Content -Raw "$env:APPDATA\Code\User\settings.json" | ConvertFrom-Json
+$settings.'chatgpt.runCodexInWindowsSubsystemForLinux'
+$settings.'chatgpt.cliExecutable'
+```
+
+确认本地 DeepSeek proxy 已经启动，并且模型目录包含 `deepseek-v4-pro`：
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:17777/v1/models" -Method Get |
+  Select-Object -ExpandProperty data |
+  Select-Object id,display_name
+```
+
+确认 VSCode Codex 插件能加载 wrapper，并且 wrapper 实际把默认模型注入为 `deepseek-v4-pro`：
+
+```powershell
+$wrapper = Join-Path $env:LOCALAPPDATA "CodexDeepSeek\CodexDeepSeekAppServer.exe"
+$psi = [System.Diagnostics.ProcessStartInfo]::new()
+$psi.FileName = $wrapper
+$psi.Arguments = "app-server"
+$psi.UseShellExecute = $false
+$psi.CreateNoWindow = $true
+$psi.RedirectStandardInput = $true
+$psi.RedirectStandardOutput = $true
+$psi.RedirectStandardError = $true
+
+$p = [System.Diagnostics.Process]::new()
+$p.StartInfo = $psi
+[void]$p.Start()
+Start-Sleep -Seconds 2
+
+Get-CimInstance Win32_Process |
+  Where-Object { $_.ParentProcessId -eq $p.Id -or $_.ProcessId -eq $p.Id } |
+  Select-Object ProcessId,ParentProcessId,Name,CommandLine
+
+taskkill.exe /PID $p.Id /T /F | Out-Null
+```
+
+子进程命令行里应包含这些参数：
+
+```text
+-c "model_provider=\"deepseek-codex\""
+-c "model=\"deepseek-v4-pro\""
+-c "model_providers.deepseek-codex.base_url=\"http://127.0.0.1:17777/v1\""
+-c "model_providers.deepseek-codex.wire_api=\"responses\""
+```
+
+如果旧的 `%USERPROFILE%\.codex\deepseek.env` 或 `%LOCALAPPDATA%\CodexDeepSeek\deepseek.env` 被 ACL 锁住，安装脚本会改写可读的 `%LOCALAPPDATA%\CodexDeepSeek\deepseek.local.env` 作为备用 key 文件；启动脚本会按环境变量、用户目录 key、安装目录 key、备用 key 的顺序查找。
+
 ### 手动部署
 
 1. 编译 wrapper：

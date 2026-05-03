@@ -51,7 +51,7 @@ function Protect-SecretFile {
   param([string]$Path)
   try {
     & icacls $Path /inheritance:r | Out-Null
-    & icacls $Path /grant:r "$env:USERNAME:F" | Out-Null
+    & icacls $Path /grant:r "$($env:USERDOMAIN)\$($env:USERNAME):F" | Out-Null
   } catch {
     Write-Warning "Unable to tighten ACL for ${Path}: $($_.Exception.Message)"
   }
@@ -79,6 +79,7 @@ Copy-Item -LiteralPath $BuilderSource -Destination (Join-Path $InstallDir "Build
 $CodexHome = Join-Path $env:USERPROFILE ".codex"
 $SecretFile = Join-Path $CodexHome "deepseek.env"
 $InstallSecretFile = Join-Path $InstallDir "deepseek.env"
+$InstallFallbackSecretFile = Join-Path $InstallDir "deepseek.local.env"
 New-Item -ItemType Directory -Force -Path $CodexHome | Out-Null
 
 if (-not $DeepSeekApiKey) {
@@ -109,9 +110,16 @@ try {
   Protect-SecretFile -Path $SecretFile
 } catch {
   Write-Warning "Unable to write ${SecretFile}: $($_.Exception.Message)"
-  Write-Step "Writing DeepSeek key to fallback file $InstallSecretFile"
-  Set-Content -LiteralPath $InstallSecretFile -Value $SecretValue -Encoding ASCII
-  Protect-SecretFile -Path $InstallSecretFile
+  try {
+    Write-Step "Writing DeepSeek key to fallback file $InstallSecretFile"
+    Set-Content -LiteralPath $InstallSecretFile -Value $SecretValue -Encoding ASCII
+    Protect-SecretFile -Path $InstallSecretFile
+  } catch {
+    Write-Warning "Unable to write ${InstallSecretFile}: $($_.Exception.Message)"
+    Write-Step "Writing DeepSeek key to fallback file $InstallFallbackSecretFile"
+    Set-Content -LiteralPath $InstallFallbackSecretFile -Value $SecretValue -Encoding ASCII
+    Protect-SecretFile -Path $InstallFallbackSecretFile
+  }
 }
 
 $WrapperExe = Join-Path $InstallDir "CodexDeepSeekAppServer.exe"
